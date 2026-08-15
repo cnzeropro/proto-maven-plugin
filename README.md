@@ -18,6 +18,8 @@ Unlike the declarative [TOML plugin](https://moonrepo.dev/docs/proto/toml-plugin
 
 ### Installation
 
+Requires **proto 0.60.2+**.
+
 Add this plugin to your `.prototools` file:
 
 ```toml
@@ -128,6 +130,8 @@ MIT
 - **跨平台** — Linux（x64、arm64）、macOS（x64、arm64）、Windows（x64）。
 
 ### 安装
+
+需要 **proto 0.60.2 及以上版本**。
 
 将本插件添加到 `.prototools`：
 

@@ -10,6 +10,8 @@ pub fn register_tool(Json(_): Json<RegisterToolInput>) -> FnResult<Json<Register
         name: NAME.into(),
         type_of: PluginType::CommandLine,
         plugin_version: Version::parse(env!("CARGO_PKG_VERSION")).ok(),
+        // Built against proto_pdk 0.34, which matches the proto 0.60.2 API
+        minimum_proto_version: Version::parse("0.60.2").ok(),
         ..RegisterToolOutput::default()
     }))
 }
@@ -128,7 +130,12 @@ pub fn locate_executables(
     };
 
     Ok(Json(LocateExecutablesOutput {
-        exes: FxHashMap::from_iter([("mvn".into(), ExecutableConfig::new_primary(exe_path))]),
+        // Register both names: `mvn` is the canonical binary (primary),
+        // `maven` is an alias so `proto bin maven` / `maven --version` also work.
+        exes: FxHashMap::from_iter([
+            ("mvn".into(), ExecutableConfig::new_primary(exe_path.clone())),
+            ("maven".into(), ExecutableConfig::new(exe_path)),
+        ]),
         exes_dirs: vec!["bin".into()],
         ..LocateExecutablesOutput::default()
     }))
