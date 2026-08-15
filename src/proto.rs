@@ -1,20 +1,16 @@
 use extism_pdk::*;
 use proto_pdk::*;
+use rustc_hash::FxHashMap;
 
 static NAME: &str = "Maven";
 
 #[plugin_fn]
-pub fn register_tool(Json(_): Json<ToolMetadataInput>) -> FnResult<Json<ToolMetadataOutput>> {
-    Ok(Json(ToolMetadataOutput {
+pub fn register_tool(Json(_): Json<RegisterToolInput>) -> FnResult<Json<RegisterToolOutput>> {
+    Ok(Json(RegisterToolOutput {
         name: NAME.into(),
-        type_of: PluginType::CLI,
-        plugin_version: Some(env!("CARGO_PKG_VERSION").into()),
-        inventory: ToolInventoryMetadata {
-            disable_progress_bars: false,
-            override_dir: None,
-            version_suffix: None,
-        },
-        ..ToolMetadataOutput::default()
+        type_of: PluginType::CommandLine,
+        plugin_version: Version::parse(env!("CARGO_PKG_VERSION")).ok(),
+        ..RegisterToolOutput::default()
     }))
 }
 
@@ -26,7 +22,7 @@ pub fn load_versions(Json(_): Json<LoadVersionsInput>) -> FnResult<Json<LoadVers
     let base_url = "https://archive.apache.org/dist/maven/";
 
     // Step 1: Fetch the top-level directory to find all maven-X directories
-    let index_html = fetch_url_text(base_url)?;
+    let index_html = fetch_text(base_url)?;
 
     // Extract major version dirs like "maven-1", "maven-2", "maven-3", ...
     let mut major_dirs: Vec<String> = Vec::new();
@@ -48,7 +44,7 @@ pub fn load_versions(Json(_): Json<LoadVersionsInput>) -> FnResult<Json<LoadVers
 
     for major_dir in &major_dirs {
         let major_url = format!("{base_url}{major_dir}/");
-        if let Ok(html) = fetch_url_text(&major_url) {
+        if let Ok(html) = fetch_text(&major_url) {
             let mut s = html.as_str();
             while let Some(pos) = s.find("href=\"") {
                 s = &s[pos + 6..]; // skip 'href="'
@@ -97,7 +93,7 @@ pub fn download_prebuilt(
 
     let version = input.context.version.to_string();
 
-    // Dynamically extract major version to support 1.x, 2.x, 3.x, 4.x, 5.x, ...
+    // Dynamically extract major version to support 2.x, 3.x, 4.x, 5.x, ...
     let major = version.split('.').next().unwrap_or("3");
 
     let download_file = match env.os {
@@ -125,15 +121,15 @@ pub fn locate_executables(
 ) -> FnResult<Json<LocateExecutablesOutput>> {
     let env = get_host_environment()?;
 
-    // Maven's binary is named `mvn`, not `maven` — proto needs the explicit path
+    // Maven's binary is named `mvn`, not `maven` — register it explicitly
     let exe_path = match env.os {
         HostOS::Windows => "bin/mvn.cmd",
         _ => "bin/mvn",
     };
 
     Ok(Json(LocateExecutablesOutput {
-        exes_dir: Some("bin".into()),
-        primary: Some(ExecutableConfig::new(exe_path)),
+        exes: FxHashMap::from_iter([("mvn".into(), ExecutableConfig::new(exe_path))]),
+        exes_dirs: vec!["bin".into()],
         ..LocateExecutablesOutput::default()
     }))
 }

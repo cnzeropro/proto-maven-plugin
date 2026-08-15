@@ -9,8 +9,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-extism-pdk = { version = "1.2.0" }
-proto_pdk = { version = "0.21.0" }
+extism-pdk = { version = "1.4" }
+proto_pdk = { version = "0.32" }
+rustc-hash = "2.1"
 serde = { version = "1.0", features = ["derive"] }
 
 [features]
