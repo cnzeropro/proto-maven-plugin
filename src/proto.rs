@@ -2,7 +2,7 @@ use extism_pdk::*;
 use proto_pdk::*;
 use rustc_hash::FxHashMap;
 
-use crate::version::{compare_versions, is_valid_version, normalize_version};
+use crate::version::{compare_versions, is_valid_version, normalize_version, windows_launcher};
 
 static NAME: &str = "Maven";
 
@@ -129,13 +129,12 @@ pub fn download_prebuilt(
 
     let download_url = format!("{base}/{download_file}");
 
-    // 校验和：proto 0.60 仅支持 sha256/sha512（及 minisign）算法。
-    // 归档上 3.x+ 提供 .sha512 文件可用；1.x 仅有 .md5、2.x 仅有 .md5/.sha1，
-    // 均不被 proto 支持，只能跳过校验。
-    let checksum_url = match major {
-        "1" | "2" => None,
-        _ => Some(format!("{base}/{download_file}.sha512")),
-    };
+    // 校验和：proto 0.60 仅支持 sha256/sha512（及 minisign）算法，
+    // 而归档上只有较新版本提供 .sha512（老版本仅有 .md5/.sha1，不被 proto 支持）。
+    // 因此抓取 binaries 目录列表动态探测 .sha512 是否存在，存在才启用校验，
+    // 探测失败（网络异常等）也不阻塞安装。
+    let checksum_url = detect_sha512_checksum(&base, &download_file)
+        .map(|_| format!("{base}/{download_file}.sha512"));
 
     Ok(Json(DownloadPrebuiltOutput {
         archive_prefix: Some(archive_prefix),
@@ -146,6 +145,17 @@ pub fn download_prebuilt(
     }))
 }
 
+/// 探测 binaries 目录中是否存在对应的 .sha512 校验文件。
+/// 返回 Some 表示存在（可启用校验），None 表示不存在或探测失败。
+fn detect_sha512_checksum(base: &str, download_file: &str) -> Option<()> {
+    let html = fetch_text(base).ok()?;
+    if html.contains(&format!("{download_file}.sha512")) {
+        Some(())
+    } else {
+        None
+    }
+}
+
 #[plugin_fn]
 pub fn locate_executables(
     Json(input): Json<LocateExecutablesInput>,
@@ -154,14 +164,12 @@ pub fn locate_executables(
     let version = input.context.version.to_string();
     let major = version.split('.').next().unwrap_or("3");
 
-    // 可执行脚本随大版本不同：
-    // 1.x 是 maven(.bat)，2.x 是 mvn(.bat)，3.x+ 是 mvn(.cmd)
-    let exe_path = match (env.os, major) {
-        (HostOS::Windows, "1") => "bin/maven.bat",
-        (HostOS::Windows, "2") => "bin/mvn.bat",
-        (HostOS::Windows, _) => "bin/mvn.cmd",
-        (_, "1") => "bin/maven",
-        (_, _) => "bin/mvn",
+    // Windows 脚本名随版本变化（详见 version::windows_launcher，MNG-5776）；
+    // Unix 下 1.x 是 maven，其余是 mvn
+    let exe_path = match env.os {
+        HostOS::Windows => windows_launcher(&version),
+        _ if major == "1" => "bin/maven",
+        _ => "bin/mvn",
     };
 
     // 1.x 没有 mvn 脚本，只注册 maven（与 tool id 一致）；

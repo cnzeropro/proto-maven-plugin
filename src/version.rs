@@ -36,6 +36,20 @@ pub fn normalize_version(version: &str) -> String {
     }
 }
 
+/// 返回指定版本在 Windows 下的 Maven 启动脚本相对路径。
+/// 依据 MNG-5776：1.x 是 maven.bat；2.x 与 3.3.1 之前的 3.x 是 mvn.bat；
+/// 3.3.1 起 mvn.bat 更名为 mvn.cmd。
+pub fn windows_launcher(version: &str) -> &'static str {
+    let major = version.split('.').next().unwrap_or("3");
+    if major == "1" {
+        "bin/maven.bat"
+    } else if major == "2" || compare_versions(version, "3.3.1").is_lt() {
+        "bin/mvn.bat"
+    } else {
+        "bin/mvn.cmd"
+    }
+}
+
 /// 版本号中的预发布标识：数字按数值比较，非数字按字典序比较
 #[derive(Debug, PartialEq, Eq)]
 enum PrereleasePart {
@@ -143,6 +157,23 @@ mod tests {
         assert_eq!(normalize_version("2.0.11"), "2.0.11");
         assert_eq!(normalize_version("3.1.0-alpha-1"), "3.1.0-alpha-1");
         assert_eq!(normalize_version("4.0.0-rc-6"), "4.0.0-rc-6");
+    }
+
+    #[test]
+    fn test_windows_launcher() {
+        // 1.x 使用 maven.bat
+        assert_eq!(windows_launcher("1.1.0"), "bin/maven.bat");
+        // 2.x 与 3.3.1 之前的 3.x 使用 mvn.bat
+        assert_eq!(windows_launcher("2.0.11"), "bin/mvn.bat");
+        assert_eq!(windows_launcher("2.2.1"), "bin/mvn.bat");
+        assert_eq!(windows_launcher("3.0.4"), "bin/mvn.bat");
+        assert_eq!(windows_launcher("3.1.0-alpha-1"), "bin/mvn.bat");
+        assert_eq!(windows_launcher("3.2.5"), "bin/mvn.bat");
+        // 3.3.1 起使用 mvn.cmd（MNG-5776）
+        assert_eq!(windows_launcher("3.3.1"), "bin/mvn.cmd");
+        assert_eq!(windows_launcher("3.3.9"), "bin/mvn.cmd");
+        assert_eq!(windows_launcher("3.9.16"), "bin/mvn.cmd");
+        assert_eq!(windows_launcher("4.0.0-rc-6"), "bin/mvn.cmd");
     }
 
     #[test]
