@@ -119,12 +119,16 @@ pub fn download_prebuilt(
 
 #[plugin_fn]
 pub fn locate_executables(
-    Json(_): Json<LocateExecutablesInput>,
+    Json(input): Json<LocateExecutablesInput>,
 ) -> FnResult<Json<LocateExecutablesOutput>> {
     let env = get_host_environment()?;
+    let version = input.context.version.to_string();
+    let major = version.split('.').next().unwrap_or("3");
 
-    // Maven's binary is named `mvn`, not `maven` — register it explicitly
+    // Maven's binary is named `mvn`, not `maven` — register it explicitly.
+    // Windows script extension differs by major: 2.x ships mvn.bat, 3.x+ ships mvn.cmd.
     let exe_path = match env.os {
+        HostOS::Windows if major == "2" => "bin/mvn.bat",
         HostOS::Windows => "bin/mvn.cmd",
         _ => "bin/mvn",
     };

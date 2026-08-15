@@ -48,6 +48,8 @@ The plugin discovers all versions that have published binaries on [archive.apach
 
 Only stable releases (three-part numeric versions, `X.Y.Z`) are listed. Alpha/beta/RC releases are filtered out. Maven 1.x is excluded because it uses a completely different directory structure (`maven-1/1.1/binaries/`, two-part versions) and a different binary name (`maven` instead of `mvn`).
 
+> **Note on running old versions:** Installing works across all major versions, but running Maven 2.x (and 3.0.x–3.3.x) requires a compatible JDK (Java 8 or earlier is recommended for Maven 2.x). Set `JAVA_HOME` accordingly. Maven 3.9+ works with modern JDKs.
+
 ### How It Works
 
 **Version Discovery** (`load_versions`):
@@ -160,6 +162,8 @@ proto install maven latest
 | 5.x+ | 未来版本 | 自动支持 |
 
 仅列出稳定版本（`X.Y.Z` 三段式数字），alpha/beta/rc 等预发布版本会被过滤。Maven 1.x 因目录结构完全不同（`maven-1/1.1/binaries/`、两段式版本号）且二进制名为 `maven` 而非 `mvn`，不支持。
+
+> **旧版本运行提示：** 所有大版本均可安装，但运行 Maven 2.x（以及 3.0.x–3.3.x）需要兼容的 JDK（2.x 建议 Java 8 或更早）。请相应设置 `JAVA_HOME`。Maven 3.9+ 可在现代 JDK 上运行。
 
 ### 工作原理
 
