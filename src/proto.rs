@@ -128,7 +128,7 @@ pub fn locate_executables(
     };
 
     Ok(Json(LocateExecutablesOutput {
-        exes: FxHashMap::from_iter([("mvn".into(), ExecutableConfig::new(exe_path))]),
+        exes: FxHashMap::from_iter([("mvn".into(), ExecutableConfig::new_primary(exe_path))]),
         exes_dirs: vec!["bin".into()],
         ..LocateExecutablesOutput::default()
     }))
