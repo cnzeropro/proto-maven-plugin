@@ -123,9 +123,17 @@ pub fn download_prebuilt(
 pub fn locate_executables(
     Json(_): Json<LocateExecutablesInput>,
 ) -> FnResult<Json<LocateExecutablesOutput>> {
+    let env = get_host_environment()?;
+
+    // Maven's binary is named `mvn`, not `maven` — proto needs the explicit path
+    let exe_path = match env.os {
+        HostOS::Windows => "bin/mvn.cmd",
+        _ => "bin/mvn",
+    };
+
     Ok(Json(LocateExecutablesOutput {
-        // Point proto to the bin/ directory where mvn lives
         exes_dir: Some("bin".into()),
+        primary: Some(ExecutableConfig::new(exe_path)),
         ..LocateExecutablesOutput::default()
     }))
 }
