@@ -1,0 +1,2 @@
+[plugins]
+maven = "file://./target/wasm32-wasip1/release/maven_plugin.wasm"
