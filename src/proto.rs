@@ -2,7 +2,7 @@ use extism_pdk::*;
 use proto_pdk::*;
 use rustc_hash::FxHashMap;
 
-use crate::version::{compare_versions, is_valid_version};
+use crate::version::{compare_versions, is_valid_version, normalize_version};
 
 static NAME: &str = "Maven";
 
@@ -54,9 +54,10 @@ pub fn load_versions(Json(_): Json<LoadVersionsInput>) -> FnResult<Json<LoadVers
                 s = &s[pos + 6..]; // skip 'href="'
                 if let Some(end) = s.find('/') {
                     let candidate = &s[..end];
-                    // 接受正式版与 alpha/beta/rc 等预发布版本，不做过滤
+                    // 接受正式版与 alpha/beta/rc 等预发布版本，不做过滤；
+                    // 两段式版本（如 1.1）补全为三段式 semver，proto 才能解析
                     if is_valid_version(candidate) {
-                        let version = candidate.to_string();
+                        let version = normalize_version(candidate);
                         if !all_versions.contains(&version) {
                             all_versions.push(version);
                         }
@@ -93,14 +94,26 @@ pub fn download_prebuilt(
     // Dynamically extract major version to support 1.x, 2.x, 3.x, 4.x, ...
     let major = version.split('.').next().unwrap_or("3");
 
+    // 1.x 归档使用两段式版本号（目录 maven-1/1.1、文件 maven-1.1.zip），
+    // 而 proto 传入的是补全后的三段式（1.1.0），需还原为 1.1
+    let archive_version = if major == "1" {
+        let mut parts = version.split('.');
+        let first = parts.next().unwrap_or("1");
+        let second = parts.next().unwrap_or("0");
+        format!("{first}.{second}")
+    } else {
+        version.clone()
+    };
+
     // 1.x 的发行包无 "apache-" 前缀与 "-bin" 后缀：maven-1.1.zip / maven-1.1.tar.gz
     let (download_file, archive_prefix) = match (env.os, major) {
-        (HostOS::Windows, "1") => {
-            (format!("maven-{version}.zip"), format!("maven-{version}"))
-        }
+        (HostOS::Windows, "1") => (
+            format!("maven-{archive_version}.zip"),
+            format!("maven-{archive_version}"),
+        ),
         (_, "1") => (
-            format!("maven-{version}.tar.gz"),
-            format!("maven-{version}"),
+            format!("maven-{archive_version}.tar.gz"),
+            format!("maven-{archive_version}"),
         ),
         (HostOS::Windows, _) => (
             format!("apache-maven-{version}-bin.zip"),
@@ -112,23 +125,23 @@ pub fn download_prebuilt(
         ),
     };
 
-    let base = format!("https://archive.apache.org/dist/maven/maven-{major}/{version}/binaries");
-
-    // 校验和算法随大版本演进：1.x 仅提供 md5，2.x 提供 sha1，3.x+ 提供 sha512
-    let checksum_ext = match major {
-        "1" => "md5",
-        "2" => "sha1",
-        _ => "sha512",
-    };
+    let base = format!("https://archive.apache.org/dist/maven/maven-{major}/{archive_version}/binaries");
 
     let download_url = format!("{base}/{download_file}");
-    let checksum_url = format!("{base}/{download_file}.{checksum_ext}");
+
+    // 校验和：proto 0.60 仅支持 sha256/sha512（及 minisign）算法。
+    // 归档上 3.x+ 提供 .sha512 文件可用；1.x 仅有 .md5、2.x 仅有 .md5/.sha1，
+    // 均不被 proto 支持，只能跳过校验。
+    let checksum_url = match major {
+        "1" | "2" => None,
+        _ => Some(format!("{base}/{download_file}.sha512")),
+    };
 
     Ok(Json(DownloadPrebuiltOutput {
         archive_prefix: Some(archive_prefix),
         download_url,
         download_name: Some(download_file),
-        checksum_url: Some(checksum_url),
+        checksum_url,
         ..DownloadPrebuiltOutput::default()
     }))
 }

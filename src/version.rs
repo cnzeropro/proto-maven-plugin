@@ -26,6 +26,16 @@ pub fn is_valid_version(candidate: &str) -> bool {
     has_dot
 }
 
+/// 将归档中的版本号规范化为 proto 可解析的三段式 semver。
+/// 两段式版本（如 Maven 1.x 的 1.1）补全为 1.1.0；三段及预发布版本原样返回。
+pub fn normalize_version(version: &str) -> String {
+    if version.matches('.').count() == 1 {
+        format!("{version}.0")
+    } else {
+        version.to_string()
+    }
+}
+
 /// 版本号中的预发布标识：数字按数值比较，非数字按字典序比较
 #[derive(Debug, PartialEq, Eq)]
 enum PrereleasePart {
@@ -125,6 +135,14 @@ mod tests {
         assert!(!is_valid_version("?C=N;O=D"));
         assert!(!is_valid_version("maven-3"));
         assert!(!is_valid_version(""));
+    }
+
+    #[test]
+    fn test_normalize_version() {
+        assert_eq!(normalize_version("1.1"), "1.1.0");
+        assert_eq!(normalize_version("2.0.11"), "2.0.11");
+        assert_eq!(normalize_version("3.1.0-alpha-1"), "3.1.0-alpha-1");
+        assert_eq!(normalize_version("4.0.0-rc-6"), "4.0.0-rc-6");
     }
 
     #[test]
