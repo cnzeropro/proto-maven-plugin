@@ -7,7 +7,7 @@ static NAME: &str = "Maven";
 pub fn register_tool(Json(_): Json<ToolMetadataInput>) -> FnResult<Json<ToolMetadataOutput>> {
     Ok(Json(ToolMetadataOutput {
         name: NAME.into(),
-        type_of: PluginType::Language,
+        type_of: PluginType::CLI,
         plugin_version: Some(env!("CARGO_PKG_VERSION").into()),
         inventory: ToolInventoryMetadata {
             disable_progress_bars: false,

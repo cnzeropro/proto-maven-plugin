@@ -38,13 +38,13 @@ The plugin discovers all versions that have published binaries on [archive.apach
 
 | Major | Status | Example Versions |
 |-------|--------|-----------------|
-| 1.x | Historical | — |
+| 1.x | Not supported | Different structure & binary name |
 | 2.x | Stable (archived) | 2.0.11, 2.2.1 |
 | 3.x | Stable | 3.9.9, 3.9.16 |
 | 4.x | Pre-release only | 4.0.0-rc-6 |
 | 5.x+ | Future | Automatic |
 
-Only stable releases (three-part numeric versions, `X.Y.Z`) are listed. Alpha/beta/RC releases are filtered out.
+Only stable releases (three-part numeric versions, `X.Y.Z`) are listed. Alpha/beta/RC releases are filtered out. Maven 1.x is excluded because it uses a completely different directory structure (`maven-1/1.1/binaries/`, two-part versions) and a different binary name (`maven` instead of `mvn`).
 
 ### How It Works
 
@@ -149,13 +149,13 @@ proto install maven latest
 
 | 大版本 | 状态 | 示例版本 |
 |--------|------|----------|
-| 1.x | 历史版本 | — |
+| 1.x | 不支持 | 目录结构与二进制名不同 |
 | 2.x | 稳定（归档） | 2.0.11、2.2.1 |
 | 3.x | 当前稳定 | 3.9.9、3.9.16 |
 | 4.x | 仅有预发布 | 4.0.0-rc-6 |
 | 5.x+ | 未来版本 | 自动支持 |
 
-仅列出稳定版本（`X.Y.Z` 三段式数字），alpha/beta/rc 等预发布版本会被过滤。
+仅列出稳定版本（`X.Y.Z` 三段式数字），alpha/beta/rc 等预发布版本会被过滤。Maven 1.x 因目录结构完全不同（`maven-1/1.1/binaries/`、两段式版本号）且二进制名为 `maven` 而非 `mvn`，不支持。
 
 ### 工作原理
 
