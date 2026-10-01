@@ -6,14 +6,13 @@ charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
-
-# Rust 源码 4 空格（rustfmt 默认）
-[*.rs]
 indent_style = space
 indent_size = 4
 
-[*.{toml,yml,yaml,json}]
-indent_style = space
+[*.{rs}]
+indent_size = 4
+
+[*.{yml,toml}]
 indent_size = 2
 
 [*.md]

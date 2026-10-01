@@ -1,5 +1,2 @@
-# 统一行尾：文本文件以 LF 存入仓库，Windows 批处理脚本保持 CRLF
-* text=auto
-*.sh  text eol=lf
-*.cmd text eol=crlf
-*.bat text eol=crlf
+# 文本文件自动识别并统一以 LF 存入仓库
+* text=auto eol=lf
